@@ -43,13 +43,13 @@ chmod +x scripts/*.py
 
 # Test basic functionality
 echo "🧪 Testing system..."
-if python3 scripts/grocery-intelligence-hub.py --help > /dev/null 2>&1; then
+if python3 scripts/grocery_intelligence_hub.py --help > /dev/null 2>&1; then
     echo "✅ Grocery intelligence hub working"
 else
     echo "⚠️  Main script test failed - check dependencies"
 fi
 
-if python3 scripts/supermarket-prices.py --help > /dev/null 2>&1; then
+if python3 scripts/supermarket_prices.py --help > /dev/null 2>&1; then
     echo "✅ Price engine working"
 else
     echo "⚠️  Price engine test failed"
@@ -60,8 +60,8 @@ echo "🎯 SETUP COMPLETE!"
 echo ""
 echo "📚 Next steps:"
 echo "   1. Edit config/grocery-intelligence.json if needed"
-echo "   2. Run: python3 scripts/grocery-intelligence-hub.py"
-echo "   3. Try: python3 scripts/grocery-intelligence-hub.py price melk"
+echo "   2. Run: python3 scripts/grocery_intelligence_hub.py"
+echo "   3. Try: python3 scripts/grocery_intelligence_hub.py price melk"
 echo ""
 echo "📖 Documentation: docs/GROCERY-SIMPLE-GUIDE.md"
 echo "🔒 Privacy: All data stays local - see .gitignore"

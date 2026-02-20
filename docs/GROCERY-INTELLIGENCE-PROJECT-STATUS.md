@@ -3,7 +3,7 @@
 **Project Status:** ✅ **PRODUCTION DEPLOYED**  
 **Date:** February 20, 2026  
 **Version:** 1.0.0  
-**Location:** `/Users/cirrus/.openclaw/workspace/`
+**Location:** `~/.openclaw/workspace/`
 
 ---
 
@@ -39,7 +39,7 @@ A complete **privacy-first grocery intelligence system** that provides real-time
 - **Local feedback storage** for future analysis
 
 #### **Command-Line Tools**
-- **Interactive grocery hub:** `giq` or `python3 scripts/grocery-intelligence-hub.py`
+- **Interactive grocery hub:** `giq` or `python3 scripts/grocery_intelligence_hub.py`
 - **Quick price checks:** `gi-price <product>` 
 - **Price comparisons:** `gi-compare <product>`
 - **System statistics:** `gi-stats`
@@ -92,25 +92,25 @@ Receipt items → Product matching → Price comparison → Discrepancy detectio
 
 ### **Core Components (Simplified Architecture)**
 
-#### **1. Grocery Intelligence Hub** (`scripts/grocery-intelligence-hub.py`) - **Main Interface**
+#### **1. Grocery Intelligence Hub** (`scripts/grocery_intelligence_hub.py`) - **Main Interface**
 - **Interactive mode:** Command-line interface for all operations (90% of daily usage)
 - **Batch processing:** Handle multiple receipts or products
 - **Statistics dashboard:** Real-time feedback and system metrics
 - **Integration point:** Central command for all grocery operations
 
-#### **2. Price Intelligence Engine** (`scripts/supermarket-prices.py`)
+#### **2. Price Intelligence Engine** (`scripts/supermarket_prices.py`)
 - **Product search:** Fuzzy matching across 107K products
 - **Price comparison:** Multi-store analysis with cheapest-first sorting
 - **Data caching:** 24-hour local cache for performance
 - **Store filtering:** Support for specific store queries
 
-#### **3. Feedback System** (`scripts/grocery-feedback.py`)
+#### **3. Feedback System** (`scripts/grocery_feedback.py`)
 - **Local storage:** JSONL-based feedback database
 - **Price verification:** Automated comparison against checkjebon.nl
 - **Confidence scoring:** Product matching quality assessment
 - **Statistics tracking:** Comprehensive feedback analytics
 
-#### **4. Receipt Processing Integration** (`scripts/receipt-processor.py`)
+#### **4. Receipt Processing Integration** (`scripts/receipt_processor.py`)
 - **Enhanced with grocery intelligence hooks**
 - **Dual-mode detection:** Signal keyword recognition
 - **Automatic feedback generation:** Real-time price verification
@@ -152,15 +152,15 @@ grocery-stats               # Feedback statistics
 #### **Direct Script Usage**
 ```bash
 # Main interface (recommended for 90% of usage)
-python3 scripts/grocery-intelligence-hub.py                # Interactive mode
-python3 scripts/grocery-intelligence-hub.py price <product> # Quick price check
-python3 scripts/grocery-intelligence-hub.py compare <product> # Price comparison
-python3 scripts/grocery-intelligence-hub.py stats          # System statistics
+python3 scripts/grocery_intelligence_hub.py                # Interactive mode
+python3 scripts/grocery_intelligence_hub.py price <product> # Quick price check
+python3 scripts/grocery_intelligence_hub.py compare <product> # Price comparison
+python3 scripts/grocery_intelligence_hub.py stats          # System statistics
 
 # Advanced usage (when needed)
-python3 scripts/supermarket-prices.py search <product>     # Direct price engine
-python3 scripts/grocery-feedback.py stats                  # Feedback details
-python3 scripts/grocery-feedback.py verify <receipt> <store> # Manual feedback
+python3 scripts/supermarket_prices.py search <product>     # Direct price engine
+python3 scripts/grocery_feedback.py stats                  # Feedback details
+python3 scripts/grocery_feedback.py verify <receipt> <store> # Manual feedback
 
 # Archived tools (available in scripts/archive/ if needed)
 python3 scripts/archive/grocery-only-receipt-scanner.py latest
@@ -185,14 +185,14 @@ Available commands:
 ### **Core Scripts (Simplified)**
 ```
 scripts/
-├── grocery-intelligence-hub.py          # Main interface (90% of daily usage)
-├── supermarket-prices.py               # Price database and search engine  
-├── grocery-feedback.py                  # Feedback generation and storage
-├── receipt-processor.py                # Enhanced with grocery intelligence
+├── grocery_intelligence_hub.py          # Main interface (90% of daily usage)
+├── supermarket_prices.py               # Price database and search engine  
+├── grocery_feedback.py                  # Feedback generation and storage
+├── receipt_processor.py                # Enhanced with grocery intelligence
 └── archive/                             # Non-essential scripts moved here
     ├── grocery-only-receipt-scanner.py      # Grocery-only scanning mode
     ├── production-grocery-intelligence.py   # Batch processing tools
-    ├── enhanced-receipt-processor.py        # Alternative receipt processor
+    ├── enhanced-receipt_processor.py        # Alternative receipt processor
     └── ... (6 more setup/testing scripts)
 ```
 
@@ -239,7 +239,7 @@ scripts/
 ```
 Daily Tasks:
 ├── 06:00 - Grocery Cache Update (fddefcd9-2552-4455-8631-3569058e2cdf)
-│   └── python3 scripts/supermarket-prices.py update
+│   └── python3 scripts/supermarket_prices.py update
 └── Continuous - Receipt Processing with Grocery Intelligence
     └── Automatic price verification on receipt scans
 ```
@@ -390,8 +390,8 @@ Current Feedback Status:
 ```bash
 # Check system health
 gi-stats                                 # Overall system statistics
-python3 scripts/grocery-feedback.py stats  # Detailed feedback metrics
-python3 scripts/supermarket-prices.py stats # Database status
+python3 scripts/grocery_feedback.py stats  # Detailed feedback metrics
+python3 scripts/supermarket_prices.py stats # Database status
 
 # Test system components  
 python3 test-production-live.py         # Full system validation
@@ -401,7 +401,7 @@ python3 test-grocery-only-mode.py       # Grocery-only mode testing
 ### **Troubleshooting Resources**
 - **Production logs:** Available in `~/.openclaw/logs/gateway.log`
 - **Configuration:** Located at `config/grocery-intelligence.json`
-- **Backup systems:** Original receipt processor backed up at `receipt-processor.py.pre-grocery`
+- **Backup systems:** Original receipt processor backed up at `receipt_processor.py.pre-grocery`
 - **Reset capabilities:** Use `reset-feedback-status.py` for data cleanup
 
 ### **Documentation Files**
@@ -444,10 +444,10 @@ The **Grocery Intelligence System** represents a complete, production-ready solu
 
 ### **System Simplification Achievement**
 Successfully consolidated from **15+ disparate scripts** to **4 core components** while maintaining full functionality:
-- **grocery-intelligence-hub.py** - Main interface (90% of daily usage)
-- **supermarket-prices.py** - Price database engine
-- **grocery-feedback.py** - Feedback system  
-- **receipt-processor.py** - Enhanced receipt processing
+- **grocery_intelligence_hub.py** - Main interface (90% of daily usage)
+- **supermarket_prices.py** - Price database engine
+- **grocery_feedback.py** - Feedback system  
+- **receipt_processor.py** - Enhanced receipt processing
 
 Non-essential components archived to `scripts/archive/` for maintainability.
 

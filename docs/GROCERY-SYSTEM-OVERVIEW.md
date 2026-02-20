@@ -10,10 +10,10 @@
 ~/.openclaw/workspace/
 │
 ├── 🎯 CORE SCRIPTS (Daily Use)
-│   ├── scripts/grocery-intelligence-hub.py    ← Main interface (90% of usage)
-│   ├── scripts/supermarket-prices.py          ← Direct price queries  
-│   ├── scripts/grocery-feedback.py            ← Feedback management
-│   └── scripts/receipt-processor.py           ← Enhanced receipt processing
+│   ├── scripts/grocery_intelligence_hub.py    ← Main interface (90% of usage)
+│   ├── scripts/supermarket_prices.py          ← Direct price queries  
+│   ├── scripts/grocery_feedback.py            ← Feedback management
+│   └── scripts/receipt_processor.py           ← Enhanced receipt processing
 │
 ├── 📊 DATA STORAGE
 │   ├── data/supermarkets-cache.json          ← 107K products database
@@ -46,14 +46,14 @@
 ```
 📱 Signal Receipt Scan
          ↓
-🤖 OCR Processing (receipt-processor.py)
+🤖 OCR Processing (receipt_processor.py)
          ↓
 🔀 DUAL MODE DETECTION
     ├─ Regular Receipt ──→ Expense Tracking ──→ expenses/receipts.jsonl
     │                              └─→ Grocery Intelligence ──┐
     └─ "grocery scan" keyword ──→ Skip Expense Tracking ──────┘
                                                                ↓
-📊 Price Analysis (grocery-intelligence-hub.py)
+📊 Price Analysis (grocery_intelligence_hub.py)
     ├─ Compare vs database (data/supermarkets-cache.json) ←──┘
     ├─ Generate feedback  
     └─ Store locally (memory/grocery-feedback.jsonl)
@@ -110,10 +110,10 @@ gi-stats              # System status
 
 ### **Key Scripts (Core 4 Only):**
 ```bash
-grocery-intelligence-hub.py    # Main interface
-supermarket-prices.py         # Price engine
-grocery-feedback.py           # Feedback system
-receipt-processor.py          # Receipt processing
+grocery_intelligence_hub.py    # Main interface
+supermarket_prices.py         # Price engine
+grocery_feedback.py           # Feedback system
+receipt_processor.py          # Receipt processing
 ```
 
 ## 🔍 System Status Check Commands
@@ -123,8 +123,8 @@ receipt-processor.py          # Receipt processing
 gi-stats
 
 # Detailed component status
-python3 scripts/grocery-feedback.py stats        # Feedback status
-python3 scripts/supermarket-prices.py stats      # Database status  
+python3 scripts/grocery_feedback.py stats        # Feedback status
+python3 scripts/supermarket_prices.py stats      # Database status  
 ls -la data/supermarkets-cache.json             # Cache file info
 wc -l memory/grocery-feedback.jsonl             # Feedback count
 ```

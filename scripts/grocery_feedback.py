@@ -19,7 +19,7 @@ def verify_receipt_against_checkjebon(receipt_data, store_name):
     # Load checkjebon data
     checkjebon_file = Path("data/supermarkets-cache.json")
     if not checkjebon_file.exists():
-        print("No checkjebon cache found. Run: python3 scripts/supermarket-prices.py update")
+        print("No checkjebon cache found. Run: python3 scripts/supermarket_prices.py update")
         return []
     
     with open(checkjebon_file) as f:
@@ -242,9 +242,9 @@ def analyze_receipt_file(receipt_path, store_name):
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python3 grocery-feedback.py verify <receipt_path> <store_name>")
-        print("  python3 grocery-feedback.py submit")
-        print("  python3 grocery-feedback.py stats")
+        print("  python3 grocery_feedback.py verify <receipt_path> <store_name>")
+        print("  python3 grocery_feedback.py submit")
+        print("  python3 grocery_feedback.py stats")
         print("\nShowing current stats:")
         command = "stats"
     else:
@@ -253,7 +253,7 @@ def main():
     if command == "verify":
         if len(sys.argv) < 4:
             print("Error: verify command requires <receipt_path> and <store_name>")
-            print("Example: python3 grocery-feedback.py verify ~/receipts/ah.jpg ah")
+            print("Example: python3 grocery_feedback.py verify ~/receipts/ah.jpg ah")
             sys.exit(1)
         receipt_path = sys.argv[2]
         store_name = sys.argv[3]

@@ -18,11 +18,11 @@ A **privacy-first grocery price comparison and receipt analysis system** for Ope
 ./setup.sh
 
 # 2. Use interactive mode (main interface)
-python3 scripts/grocery-intelligence-hub.py
+python3 scripts/grocery_intelligence_hub.py
 
 # 3. Or use direct commands
-python3 scripts/grocery-intelligence-hub.py price melk
-python3 scripts/grocery-intelligence-hub.py compare kipfilet
+python3 scripts/grocery_intelligence_hub.py price melk
+python3 scripts/grocery_intelligence_hub.py compare kipfilet
 ```
 
 ## 📊 What It Does
@@ -92,28 +92,28 @@ cd openclaw-grocery-intelligence
 cp config/grocery-intelligence.example.json config/grocery-intelligence.json
 
 # Test the system
-python3 scripts/grocery-intelligence-hub.py stats
+python3 scripts/grocery_intelligence_hub.py stats
 ```
 
 ## 🎮 Usage Examples
 
 ### Interactive Mode (Recommended)
 ```bash
-python3 scripts/grocery-intelligence-hub.py
+python3 scripts/grocery_intelligence_hub.py
 # Provides full menu of options
 ```
 
 ### Direct Commands
 ```bash
 # Price checking
-python3 scripts/grocery-intelligence-hub.py price "halfvolle melk"
-python3 scripts/grocery-intelligence-hub.py compare "kipfilet"
+python3 scripts/grocery_intelligence_hub.py price "halfvolle melk"
+python3 scripts/grocery_intelligence_hub.py compare "kipfilet"
 
 # System status
-python3 scripts/grocery-intelligence-hub.py stats
+python3 scripts/grocery_intelligence_hub.py stats
 
 # Feedback management
-python3 scripts/grocery-feedback.py stats
+python3 scripts/grocery_feedback.py stats
 ```
 
 ### Receipt Processing

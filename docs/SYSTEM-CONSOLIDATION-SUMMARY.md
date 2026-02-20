@@ -5,14 +5,14 @@
 ### **BEFORE: Script Chaos** ❌
 ```
 scripts/
-├── grocery-intelligence-hub.py           # Main interface
-├── grocery-feedback.py                   # Feedback system  
+├── grocery_intelligence_hub.py           # Main interface
+├── grocery_feedback.py                   # Feedback system  
 ├── grocery-only-receipt-scanner.py       # Grocery-only mode
-├── supermarket-prices.py                 # Price database
-├── receipt-processor.py                  # Enhanced receipt processing
+├── supermarket_prices.py                 # Price database
+├── receipt_processor.py                  # Enhanced receipt processing
 ├── production-grocery-intelligence.py    # Batch processing  
-├── enhanced-receipt-processor.py         # Alternative processor
-├── production-receipt-processor.py       # Production mode
+├── enhanced-receipt_processor.py         # Alternative processor
+├── production-receipt_processor.py       # Production mode
 ├── add-grocery-intelligence-hook.py      # Integration hook
 ├── grocery-signal-integration.py         # Signal integration
 ├── grocery-community-api.py              # Community API (unused)
@@ -27,10 +27,10 @@ scripts/
 ### **AFTER: Clean Architecture** ✅
 ```
 scripts/
-├── grocery-intelligence-hub.py          # Main interface (90% usage)
-├── supermarket-prices.py               # Price database engine
-├── grocery-feedback.py                 # Feedback system
-├── receipt-processor.py                # Enhanced receipt processing
+├── grocery_intelligence_hub.py          # Main interface (90% usage)
+├── supermarket_prices.py               # Price database engine
+├── grocery_feedback.py                 # Feedback system
+├── receipt_processor.py                # Enhanced receipt processing
 └── archive/                            # Non-essential components
     ├── grocery-only-receipt-scanner.py      # Available if needed
     ├── production-grocery-intelligence.py   # Setup tools
@@ -78,10 +78,10 @@ config/grocery-intelligence.json  # System settings
 
 ### **Core Scripts:**
 ```bash
-scripts/grocery-intelligence-hub.py    # Main interface
-scripts/supermarket-prices.py          # Price engine
-scripts/grocery-feedback.py            # Feedback system
-scripts/receipt-processor.py           # Receipt processing
+scripts/grocery_intelligence_hub.py    # Main interface
+scripts/supermarket_prices.py          # Price engine
+scripts/grocery_feedback.py            # Feedback system
+scripts/receipt_processor.py           # Receipt processing
 ```
 
 ### **Everything Else:**

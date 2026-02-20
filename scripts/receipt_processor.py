@@ -19,7 +19,7 @@ from pathlib import Path
 # Grocery Intelligence Integration
 try:
     import importlib.util
-    spec = importlib.util.spec_from_file_location("grocery_feedback", Path(__file__).parent / "grocery-feedback.py")
+    spec = importlib.util.spec_from_file_location("grocery_feedback", Path(__file__).parent / "grocery_feedback.py")
     grocery_feedback = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(grocery_feedback)
     GROCERY_INTELLIGENCE_AVAILABLE = True
@@ -444,7 +444,7 @@ def detect_grocery_only_mode():
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: receipt-processor.py <command> [args]")
+        print("Usage: receipt_processor.py <command> [args]")
         print("Commands: find, analyze, ocr, save, list, stats, cleanup")
         sys.exit(1)
     

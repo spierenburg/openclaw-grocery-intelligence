@@ -4,10 +4,10 @@ Unified Dutch supermarket price checker.
 Uses checkjebon.nl open data for AH, Jumbo, Hoogvliet, Lidl, Dirk, Plus, etc.
 
 Usage:
-    python3 supermarket-prices.py search "komkommer"
-    python3 supermarket-prices.py search "kipfilet" --stores ah,jumbo,dirk
-    python3 supermarket-prices.py compare "melk halfvol 1l"
-    python3 supermarket-prices.py update  # refresh local cache
+    python3 supermarket_prices.py search "komkommer"
+    python3 supermarket_prices.py search "kipfilet" --stores ah,jumbo,dirk
+    python3 supermarket_prices.py compare "melk halfvol 1l"
+    python3 supermarket_prices.py update  # refresh local cache
 """
 
 import argparse

@@ -42,35 +42,35 @@ class GroceryIntelligenceHub:
         if stores:
             args.extend(["--stores", ",".join(stores)])
         
-        self.run_script("supermarket-prices.py", args)
-    
+        self.run_script("supermarket_prices.py", args)
+
     def price_compare(self, product, stores=None):
         """Compare prices across stores."""
         print(f"📊 Comparing prices for: {product}")
-        
+
         args = ["compare", product]
         if stores:
             args.extend(["--stores", ",".join(stores)])
-        
-        self.run_script("supermarket-prices.py", args)
+
+        self.run_script("supermarket_prices.py", args)
     
     def generate_feedback(self, receipt_path, store_name):
         """Generate feedback from receipt."""
         print(f"🧾 Generating feedback for {store_name} receipt: {receipt_path}")
         
-        self.run_script("grocery-feedback.py", ["verify", receipt_path, store_name])
-    
+        self.run_script("grocery_feedback.py", ["verify", receipt_path, store_name])
+
     def submit_feedback(self):
         """Submit accumulated feedback to community."""
         print("🚀 Submitting feedback to community database...")
-        
-        self.run_script("grocery-feedback.py", ["submit"])
-    
+
+        self.run_script("grocery_feedback.py", ["submit"])
+
     def feedback_stats(self):
         """Show feedback statistics."""
         print("📊 Feedback Statistics:")
-        
-        self.run_script("grocery-feedback.py", ["stats"])
+
+        self.run_script("grocery_feedback.py", ["stats"])
     
     def start_community_api(self):
         """Start community API server."""

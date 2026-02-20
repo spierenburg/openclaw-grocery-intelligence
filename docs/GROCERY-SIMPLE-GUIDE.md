@@ -2,28 +2,28 @@
 
 ## 🎯 Just 4 Scripts You Need:
 
-### 1. **grocery-intelligence-hub.py** - Main Interface
+### 1. **grocery_intelligence_hub.py** - Main Interface
 ```bash
-python3 scripts/grocery-intelligence-hub.py                # Interactive mode
-python3 scripts/grocery-intelligence-hub.py price melk     # Quick price check
-python3 scripts/grocery-intelligence-hub.py compare kaas   # Price comparison
-python3 scripts/grocery-intelligence-hub.py stats          # System stats
+python3 scripts/grocery_intelligence_hub.py                # Interactive mode
+python3 scripts/grocery_intelligence_hub.py price melk     # Quick price check
+python3 scripts/grocery_intelligence_hub.py compare kaas   # Price comparison
+python3 scripts/grocery_intelligence_hub.py stats          # System stats
 ```
 
-### 2. **supermarket-prices.py** - Direct Price Queries  
+### 2. **supermarket_prices.py** - Direct Price Queries  
 ```bash  
-python3 scripts/supermarket-prices.py search melk          # Search products
-python3 scripts/supermarket-prices.py compare kipfilet     # Compare prices
-python3 scripts/supermarket-prices.py update               # Update database
+python3 scripts/supermarket_prices.py search melk          # Search products
+python3 scripts/supermarket_prices.py compare kipfilet     # Compare prices
+python3 scripts/supermarket_prices.py update               # Update database
 ```
 
-### 3. **grocery-feedback.py** - Feedback Management
+### 3. **grocery_feedback.py** - Feedback Management
 ```bash
-python3 scripts/grocery-feedback.py stats                  # Show feedback stats
-python3 scripts/grocery-feedback.py verify receipt.jpg ah  # Manual feedback
+python3 scripts/grocery_feedback.py stats                  # Show feedback stats
+python3 scripts/grocery_feedback.py verify receipt.jpg ah  # Manual feedback
 ```
 
-### 4. **receipt-processor.py** - Enhanced Receipt Processing
+### 4. **receipt_processor.py** - Enhanced Receipt Processing
 ```bash  
 # This runs automatically when you scan receipts via Signal
 # Now includes grocery intelligence for supported stores
@@ -36,17 +36,17 @@ python3 scripts/grocery-feedback.py verify receipt.jpg ah  # Manual feedback
 # Quick price check
 gi-price melk                    # (alias, after terminal restart)
 # OR
-python3 scripts/grocery-intelligence-hub.py price melk
+python3 scripts/grocery_intelligence_hub.py price melk
 
 # Price comparison  
 gi-compare kipfilet              # (alias)
 # OR  
-python3 scripts/grocery-intelligence-hub.py compare kipfilet
+python3 scripts/grocery_intelligence_hub.py compare kipfilet
 
 # Interactive mode (best for exploring)
 giq                             # (alias)
 # OR
-python3 scripts/grocery-intelligence-hub.py
+python3 scripts/grocery_intelligence_hub.py
 ```
 
 **Receipt Scanning:**
@@ -56,7 +56,7 @@ python3 scripts/grocery-intelligence-hub.py
 ## 📊 Check System Status:
 ```bash
 gi-stats                        # Quick stats
-python3 scripts/grocery-feedback.py stats    # Detailed feedback stats
+python3 scripts/grocery_feedback.py stats    # Detailed feedback stats
 ```
 
 ## 📊 Current System Status
