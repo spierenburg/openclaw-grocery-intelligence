@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "updated": "2026-02-10",
+  "preferences": {
+    "budget": ["lidl", "dirk"],
+    "convenience": ["jumbo", "ah"],
+    "nearby": ["hoogvliet"],
+    "online": ["picnic"]
+  },
+  "stores": [
+    {
+      "id": "lidl",
+      "name": "Lidl",
+      "priority": 1,
+      "reason": "goedkoop",
+      "website": "https://www.lidl.nl",
+      "recipes": "https://www.lidl.nl/nl/recepten",
+      "has_recipes": true,
+      "notes": "Beperkt assortiment, maar scherpe prijzen"
+    },
+    {
+      "id": "dirk",
+      "name": "Dirk",
+      "priority": 1,
+      "reason": "goedkoop",
+      "website": "https://www.dirk.nl",
+      "recipes": "https://www.dirk.nl/recepten",
+      "has_recipes": true,
+      "notes": "Favoriet voor dagelijkse boodschappen"
+    },
+    {
+      "id": "hoogvliet",
+      "name": "Hoogvliet",
+      "priority": 2,
+      "reason": "dichtbij",
+      "website": "https://www.hoogvliet.com",
+      "recipes": "https://www.hoogvliet.com/recepten",
+      "has_recipes": true,
+      "notes": "Handig voor snelle boodschappen"
+    },
+    {
+      "id": "jumbo",
+      "name": "Jumbo",
+      "priority": 3,
+      "reason": "makkelijk maar duur",
+      "website": "https://www.jumbo.com",
+      "recipes": "https://www.jumbo.com/recepten",
+      "has_recipes": true,
+      "notes": "Goed assortiment, receptensite is prima"
+    },
+    {
+      "id": "ah",
+      "name": "Albert Heijn",
+      "priority": 3,
+      "reason": "makkelijk maar duur",
+      "website": "https://www.ah.nl",
+      "recipes": "https://www.ah.nl/allerhande",
+      "has_recipes": true,
+      "notes": "Allerhande heeft veel recepten, maar AH is duur"
+    },
+    {
+      "id": "picnic",
+      "name": "Picnic",
+      "priority": 2,
+      "reason": "online bezorging",
+      "website": "https://www.picnic.app",
+      "recipes": null,
+      "has_recipes": false,
+      "notes": "Online supermarkt, geen eigen receptensite"
+    }
+  ],
+  "recipe_source_priority": [
+    "dirk",
+    "lidl",
+    "hoogvliet",
+    "jumbo",
+    "ah"
+  ]
+}

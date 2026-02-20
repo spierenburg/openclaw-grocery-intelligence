@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "production": false,
+  "settings": {
+    "auto_feedback": true,
+    "cache_duration_hours": 24,
+    "max_feedback_entries": 1000,
+    "stores_priority": [
+      "lidl",
+      "dirk",
+      "ah",
+      "jumbo",
+      "hoogvliet"
+    ],
+    "confidence_threshold": 0.3,
+    "price_difference_threshold": 0.05
+  },
+  "paths": {
+    "feedback_file": "data/grocery-feedback.jsonl",
+    "cache_file": "data/supermarkets-cache.json",
+    "receipts_dir": "data/receipts"
+  },
+  "notes": [
+    "This is an example configuration",
+    "Customize paths and settings for your setup",
+    "Never commit sensitive data or real receipt files"
+  ]
+}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-02-20T15:06:49.742500", "type": "price_discrepancy", "discrepancies": [{"receipt_product": "Example Product", "receipt_price": 1.99, "checkjebon_product": "Example Matched Product", "checkjebon_price": 1.79, "price_difference": 0.2, "store": "example_store", "date": "2026-02-20", "confidence": 0.8}], "source": "receipt_ocr", "status": "pending_submission"}
