@@ -7,10 +7,12 @@ Uses local Ollama vision model for privacy-first OCR.
 
 import base64
 import json
+import math
 import os
 import shutil
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -91,6 +93,22 @@ def run_tesseract(image_path: str) -> str:
 # Ollama config — set OLLAMA_URL in environment to override (never hardcode IPs in source)
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
 VISION_MODEL = os.environ.get("OLLAMA_VISION_MODEL", "llama3.2-vision:11b")
+
+_ALLOWED_OLLAMA_HOSTS = {"localhost", "127.0.0.1"}
+
+
+def _validate_ollama_url(url: str) -> None:
+    """Finding #2: prevent SSRF — Ollama endpoint must be localhost only."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"OLLAMA_URL scheme not allowed: {parsed.scheme!r}")
+    if parsed.hostname not in _ALLOWED_OLLAMA_HOSTS:
+        raise ValueError(
+            f"OLLAMA_URL host not in allowlist (must be localhost or 127.0.0.1): {parsed.hostname!r}"
+        )
+
+
+_validate_ollama_url(OLLAMA_URL)
 
 
 _VALID_CATEGORIES = {
@@ -214,9 +232,15 @@ If not a receipt: {"is_receipt":false}"""
             if not amount_match:
                 amount_match = re.search(r'(\d+[.,]\d{2})', response_text)
             if amount_match:
-                parsed["amount"] = float(amount_match.group(1).replace(",", "."))
+                raw_amount = float(amount_match.group(1).replace(",", "."))
+                if math.isfinite(raw_amount) and 0 <= raw_amount <= 100_000:
+                    parsed["amount"] = raw_amount
 
-            return parsed
+            # Finding #3: route fallback through the same schema validator as the primary path
+            try:
+                return _validate_llm_response(parsed)
+            except (ValueError, TypeError):
+                return {"is_receipt": False, "error": "Could not parse LLM response into valid receipt schema"}
 
     except Exception:
         # Finding #9: don't leak internal IP or error details to caller
@@ -331,7 +355,11 @@ def validate_receipt_data(data: dict) -> dict:
         raise ValueError("Receipt data must be a JSON object")
     sanitized = {k: v for k, v in data.items() if k in ALLOWED_RECEIPT_KEYS}
     if "amount" in sanitized:
-        sanitized["amount"] = float(sanitized["amount"])
+        # Finding #5: reject inf/nan and out-of-range values
+        amount = float(sanitized["amount"])
+        if not (math.isfinite(amount) and 0.0 <= amount <= 100_000.0):
+            raise ValueError(f"amount out of acceptable range [0, 100000]: {amount}")
+        sanitized["amount"] = amount
     if "items" in sanitized:
         if not isinstance(sanitized["items"], list):
             raise ValueError("items must be a list")
@@ -349,7 +377,15 @@ def cmd_save(args):
         except (json.JSONDecodeError, ValueError) as e:
             print(json.dumps({"error": f"Invalid receipt data: {e}"}))
             sys.exit(1)
-        image_path = args[1] if len(args) > 1 else None
+        if len(args) > 1:
+            # Finding #1: apply same path guard as cmd_analyze / cmd_ocr
+            try:
+                image_path = validate_image_path(args[1])
+            except ValueError as e:
+                print(json.dumps({"error": str(e)}))
+                sys.exit(1)
+        else:
+            image_path = None
     else:
         try:
             data = validate_receipt_data(json.load(sys.stdin))
@@ -416,6 +452,9 @@ def cmd_stats(args):
         if isinstance(amount, str):
             # Parse "€12.50" format
             amount = float(amount.replace("€", "").replace(",", ".").strip())
+        # Finding #5: skip corrupted/non-finite amounts rather than poisoning totals
+        if not (math.isfinite(amount) and 0.0 <= amount <= 100_000.0):
+            continue
         total_amount += amount
         
         store = r.get("store", "Unknown")

@@ -5,14 +5,37 @@ Compares receipt OCR data against checkjebon prices and reports discrepancies.
 """
 
 import json
+import re
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 import urllib.request
 import urllib.parse
 
-FEEDBACK_API = "https://api.example.com/v1/grocery-feedback"  # Placeholder
-LOCAL_FEEDBACK_FILE = Path("memory/grocery-feedback.jsonl")
+LOCAL_FEEDBACK_FILE = Path.home() / ".openclaw" / "workspace" / "grocery-feedback.jsonl"
+
+_CONTRIBUTOR_ID_FILE = Path.home() / ".openclaw" / "workspace" / "contributor-id.txt"
+
+
+def _get_contributor_id() -> str:
+    """Return a stable per-installation UUID, generating one on first use."""
+    if _CONTRIBUTOR_ID_FILE.exists():
+        cid = _CONTRIBUTOR_ID_FILE.read_text().strip()
+        if cid:
+            return cid
+    cid = str(uuid.uuid4())
+    _CONTRIBUTOR_ID_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _CONTRIBUTOR_ID_FILE.write_text(cid)
+    return cid
+
+
+def _sanitize_for_display(s: str, max_len: int = 200) -> str:
+    """Strip ANSI/VT control sequences and truncate for safe terminal display."""
+    s = re.sub(r'\x1b\][^\x07]*\x07', '', s)      # OSC sequences
+    s = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', s)   # CSI sequences
+    s = s.replace('\x1b', '')                       # bare ESC
+    return s[:max_len]
 
 def verify_receipt_against_checkjebon(receipt_data, store_name):
     """Compare receipt prices against checkjebon data."""
@@ -161,7 +184,7 @@ def submit_feedback_to_community(batch_size=10, api_url="http://localhost:5000")
                 # Submit to community API
                 payload = {
                     "corrections": corrections,
-                    "contributor_id": "openclaw-system"
+                    "contributor_id": _get_contributor_id()  # Finding #8: stable per-install UUID
                 }
                 
                 data = json.dumps(payload).encode('utf-8')
@@ -221,8 +244,13 @@ def count_pending_feedback():
 _ALLOWED_RECEIPT_DIR = Path.home() / ".openclaw"
 
 
+_MAX_STORE_NAME = 100
+
+
 def analyze_receipt_file(receipt_path, store_name):
     """Analyze a receipt file and generate feedback."""
+    store_name = str(store_name)[:_MAX_STORE_NAME]  # Finding #7: cap before any processing
+
     # Try to load actual receipt data
     if receipt_path.endswith('.json'):
         resolved = Path(receipt_path).resolve()
@@ -239,7 +267,8 @@ def analyze_receipt_file(receipt_path, store_name):
             return
     else:
         # Fallback: simulate with example data
-        print(f"Using simulated data for {receipt_path}")
+        # Finding #9: sanitize receipt_path before printing to prevent ANSI terminal injection
+        print(f"Using simulated data for {_sanitize_for_display(receipt_path)}")
         receipt_data = [
             {"name": "Melk Halfvol 1L", "price": 1.89, "date": "2026-02-20"},
             {"name": "Brood Wit", "price": 1.29, "date": "2026-02-20"},
