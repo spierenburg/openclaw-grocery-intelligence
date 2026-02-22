@@ -16,14 +16,14 @@ from datetime import datetime
 from pathlib import Path
 
 
-# Grocery Intelligence Integration
+# Grocery Intelligence Integration (Finding #11: narrow exception — ImportError only)
 try:
     import importlib.util
     spec = importlib.util.spec_from_file_location("grocery_feedback", Path(__file__).parent / "grocery_feedback.py")
     grocery_feedback = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(grocery_feedback)
     GROCERY_INTELLIGENCE_AVAILABLE = True
-except Exception as e:
+except ImportError as e:
     print(f"⚠️  Grocery intelligence not available: {e}")
     GROCERY_INTELLIGENCE_AVAILABLE = False
 
@@ -41,6 +41,16 @@ RECEIPTS_JSONL = Path.home() / ".openclaw" / "workspace" / "expenses" / "receipt
 # Ensure directories exist
 RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
 RECEIPTS_JSONL.parent.mkdir(parents=True, exist_ok=True)
+
+
+def validate_image_path(path_str: str) -> str:
+    """Resolve path and verify it is inside INBOUND_DIR to prevent path traversal."""
+    resolved = Path(path_str).resolve()
+    try:
+        resolved.relative_to(INBOUND_DIR.resolve())
+    except ValueError:
+        raise ValueError(f"Image path must be inside {INBOUND_DIR}: {resolved}")
+    return str(resolved)
 
 
 def find_recent_image(max_age_seconds: int = 300) -> dict | None:
@@ -78,9 +88,57 @@ def run_tesseract(image_path: str) -> str:
     return result.stdout.strip()
 
 
-# Ollama config
-OLLAMA_URL = "http://10.252.1.142:11434/api/generate"
-VISION_MODEL = "llama3.2-vision:11b"
+# Ollama config — set OLLAMA_URL in environment to override (never hardcode IPs in source)
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+VISION_MODEL = os.environ.get("OLLAMA_VISION_MODEL", "llama3.2-vision:11b")
+
+
+_VALID_CATEGORIES = {
+    "boodschappen", "horeca", "transport", "klussen",
+    "wonen", "kleding", "elektronica", "gezondheid", "overig"
+}
+_MAX_ITEMS = 200
+_MAX_STR = 500
+
+
+def _validate_llm_response(parsed: dict) -> dict:
+    """Finding #12: enforce schema on LLM output to prevent second-order injection."""
+    if not isinstance(parsed, dict):
+        raise ValueError("LLM response is not a JSON object")
+    if not parsed.get("is_receipt"):
+        return {"is_receipt": False}
+    validated: dict = {"is_receipt": True}
+    if "store" in parsed:
+        validated["store"] = str(parsed["store"])[:_MAX_STR]
+    if "date" in parsed:
+        import re as _re
+        if _re.match(r'^\d{4}-\d{2}-\d{2}$', str(parsed["date"])):
+            validated["date"] = parsed["date"]
+    if "time" in parsed:
+        validated["time"] = str(parsed["time"])[:10]
+    if "amount" in parsed:
+        amount = float(parsed["amount"])
+        if not (0 <= amount <= 100_000):
+            raise ValueError(f"Implausible amount: {amount}")
+        validated["amount"] = amount
+    if "items" in parsed:
+        if not isinstance(parsed["items"], list):
+            raise ValueError("items must be a list")
+        validated["items"] = [str(i)[:_MAX_STR] for i in parsed["items"][:_MAX_ITEMS]]
+    if "category" in parsed:
+        validated["category"] = parsed["category"] if parsed["category"] in _VALID_CATEGORIES else "overig"
+    return validated
+
+
+def _validated_int(value: str, min_val: int, max_val: int, default: int) -> int:
+    """Finding #10: clamp CLI integer args to a safe range."""
+    try:
+        n = int(value)
+        if not (min_val <= n <= max_val):
+            raise ValueError(f"{n} out of range [{min_val}, {max_val}]")
+        return n
+    except (TypeError, ValueError):
+        return default
 
 
 def analyze_with_ollama(image_path: str) -> dict:
@@ -121,46 +179,48 @@ If not a receipt: {"is_receipt":false}"""
         with urllib.request.urlopen(req, timeout=120) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             response_text = result.get("response", "")
-            
+
             # Try to extract JSON from response
             start = response_text.find("{")
             end = response_text.rfind("}") + 1
             if start >= 0 and end > start:
                 json_str = response_text[start:end]
                 try:
-                    return json.loads(json_str)
-                except json.JSONDecodeError:
+                    # Finding #12: validate LLM output before returning
+                    return _validate_llm_response(json.loads(json_str))
+                except (json.JSONDecodeError, ValueError):
                     pass
-            
+
             # Fallback: parse structured text response
             parsed = {"is_receipt": True, "raw": response_text}
-            
+
             # Extract store
             store_match = re.search(r'\*\*Store\*\*[:\s]+([^\n*]+)', response_text, re.I)
             if store_match:
-                parsed["store"] = store_match.group(1).strip()
-            
+                parsed["store"] = store_match.group(1).strip()[:200]
+
             # Extract date
             date_match = re.search(r'(\d{4}-\d{2}-\d{2})', response_text)
             if date_match:
                 parsed["date"] = date_match.group(1)
-            
+
             # Extract time
             time_match = re.search(r'\*\*Time\*\*[:\s]+(\d{1,2}:\d{2})', response_text, re.I)
             if time_match:
                 parsed["time"] = time_match.group(1)
-            
+
             # Extract amount
             amount_match = re.search(r'\*\*Amount\*\*[:\s]+[€]?(\d+[.,]\d{2})', response_text, re.I)
             if not amount_match:
                 amount_match = re.search(r'(\d+[.,]\d{2})', response_text)
             if amount_match:
                 parsed["amount"] = float(amount_match.group(1).replace(",", "."))
-            
+
             return parsed
-            
-    except Exception as e:
-        return {"error": str(e)}
+
+    except Exception:
+        # Finding #9: don't leak internal IP or error details to caller
+        return {"error": "Analysis service unavailable"}
 
 
 def save_receipt(receipt_data: dict, image_path: str) -> dict:
@@ -203,7 +263,7 @@ def save_receipt(receipt_data: dict, image_path: str) -> dict:
 
 def cmd_find(args):
     """Find recent images."""
-    max_age = int(args[0]) if args else 300
+    max_age = _validated_int(args[0], 1, 86_400, 300) if args else 300
     result = find_recent_image(max_age)
     if result:
         print(json.dumps({"status": "found", **result}, indent=2))
@@ -222,8 +282,12 @@ def cmd_analyze(args):
             sys.exit(1)
         image_path = result["path"]
     else:
-        image_path = args[0]
-    
+        try:
+            image_path = validate_image_path(args[0])
+        except ValueError as e:
+            print(json.dumps({"error": str(e)}))
+            sys.exit(1)
+
     print(f"Analyzing {image_path} with {VISION_MODEL}...", file=sys.stderr)
     analysis = analyze_with_ollama(image_path)
     analysis["image_path"] = image_path
@@ -240,8 +304,12 @@ def cmd_ocr(args):
             sys.exit(1)
         image_path = result["path"]
     else:
-        image_path = args[0]
-    
+        try:
+            image_path = validate_image_path(args[0])
+        except ValueError as e:
+            print(json.dumps({"error": str(e)}))
+            sys.exit(1)
+
     text = run_tesseract(image_path)
     print(json.dumps({
         "image": image_path,
@@ -250,13 +318,44 @@ def cmd_ocr(args):
     }, indent=2))
 
 
+ALLOWED_RECEIPT_KEYS = {"store", "date", "time", "amount", "items", "category", "is_receipt"}
+VALID_CATEGORIES = {
+    "boodschappen", "horeca", "transport", "klussen",
+    "wonen", "kleding", "elektronica", "gezondheid", "overig"
+}
+
+
+def validate_receipt_data(data: dict) -> dict:
+    """Strip unknown keys and enforce types to prevent second-order injection."""
+    if not isinstance(data, dict):
+        raise ValueError("Receipt data must be a JSON object")
+    sanitized = {k: v for k, v in data.items() if k in ALLOWED_RECEIPT_KEYS}
+    if "amount" in sanitized:
+        sanitized["amount"] = float(sanitized["amount"])
+    if "items" in sanitized:
+        if not isinstance(sanitized["items"], list):
+            raise ValueError("items must be a list")
+        sanitized["items"] = [str(i)[:200] for i in sanitized["items"]]
+    if "category" in sanitized and sanitized["category"] not in VALID_CATEGORIES:
+        sanitized["category"] = "overig"
+    return sanitized
+
+
 def cmd_save(args):
     """Save a receipt. Expects JSON as first arg or stdin."""
     if args:
-        data = json.loads(args[0])
+        try:
+            data = validate_receipt_data(json.loads(args[0]))
+        except (json.JSONDecodeError, ValueError) as e:
+            print(json.dumps({"error": f"Invalid receipt data: {e}"}))
+            sys.exit(1)
         image_path = args[1] if len(args) > 1 else None
     else:
-        data = json.load(sys.stdin)
+        try:
+            data = validate_receipt_data(json.load(sys.stdin))
+        except (json.JSONDecodeError, ValueError) as e:
+            print(json.dumps({"error": f"Invalid receipt data: {e}"}))
+            sys.exit(1)
         image_path = None
     
     if not image_path:
@@ -273,7 +372,7 @@ def cmd_save(args):
 
 def cmd_list(args):
     """List saved receipts."""
-    limit = int(args[0]) if args else 10
+    limit = _validated_int(args[0], 1, 10_000, 10) if args else 10
     
     if not RECEIPTS_JSONL.exists():
         print(json.dumps({"receipts": [], "total": 0}))
@@ -335,7 +434,7 @@ def cmd_stats(args):
 
 def cmd_cleanup(args):
     """Remove receipt images older than N days (default 30). Keeps JSONL data."""
-    max_days = int(args[0]) if args else 30
+    max_days = _validated_int(args[0], 1, 365, 30) if args else 30
     now = datetime.now().timestamp()
     max_age = max_days * 24 * 60 * 60
     

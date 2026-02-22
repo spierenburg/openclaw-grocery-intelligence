@@ -104,8 +104,22 @@ def submit_feedback_locally(discrepancies):
     print(f"Logged {len(discrepancies)} price discrepancies locally.")
     print(f"Total feedback entries: {count_pending_feedback()}")
 
+_ALLOWED_API_HOSTS = {"localhost", "127.0.0.1"}
+
+
+def _validate_api_url(api_url: str) -> None:
+    """Prevent SSRF by restricting scheme and host."""
+    parsed = urllib.parse.urlparse(api_url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme!r}")
+    if parsed.hostname not in _ALLOWED_API_HOSTS:
+        raise ValueError(f"API host not in allowlist: {parsed.hostname!r}")
+
+
 def submit_feedback_to_community(batch_size=10, api_url="http://localhost:5000"):
     """Submit accumulated feedback to community database."""
+    _validate_api_url(api_url)
+
     if not LOCAL_FEEDBACK_FILE.exists():
         print("No feedback to submit.")
         return
@@ -149,10 +163,6 @@ def submit_feedback_to_community(batch_size=10, api_url="http://localhost:5000")
                     "corrections": corrections,
                     "contributor_id": "openclaw-system"
                 }
-                
-                # Use urllib for simplicity (no external deps)
-                import urllib.request
-                import urllib.parse
                 
                 data = json.dumps(payload).encode('utf-8')
                 req = urllib.request.Request(
@@ -208,12 +218,21 @@ def count_pending_feedback():
                 count += 1
     return count
 
+_ALLOWED_RECEIPT_DIR = Path.home() / ".openclaw"
+
+
 def analyze_receipt_file(receipt_path, store_name):
     """Analyze a receipt file and generate feedback."""
     # Try to load actual receipt data
     if receipt_path.endswith('.json'):
+        resolved = Path(receipt_path).resolve()
         try:
-            with open(receipt_path) as f:
+            resolved.relative_to(_ALLOWED_RECEIPT_DIR.resolve())
+        except ValueError:
+            print(f"Receipt path must be within {_ALLOWED_RECEIPT_DIR}: {resolved}")
+            return
+        try:
+            with open(resolved) as f:
                 receipt_data = json.load(f)
         except FileNotFoundError:
             print(f"Receipt file not found: {receipt_path}")

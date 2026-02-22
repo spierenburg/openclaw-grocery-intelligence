@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -22,7 +23,14 @@ import re
 
 CACHE_DIR = Path.home() / ".openclaw/workspace/data"
 CACHE_FILE = CACHE_DIR / "supermarkets-cache.json"
-CHECKJEBON_URL = "https://raw.githubusercontent.com/supermarkt/checkjebon/refs/heads/main/data/supermarkets.json"
+
+# Pinned to a specific commit SHA — prevents silent branch-level supply chain substitution.
+# To update: fetch new SHA from https://github.com/supermarkt/checkjebon/commits/main,
+# download the file, compute sha256, and update both constants below.
+_CHECKJEBON_COMMIT = "d641a6d88158ea40a5f87fe54b20ceed4776d01b"
+CHECKJEBON_URL = f"https://raw.githubusercontent.com/supermarkt/checkjebon/{_CHECKJEBON_COMMIT}/data/supermarkets.json"
+CHECKJEBON_SHA256 = "3263d0745f9621647f20b2d6655fc2a0e7df5ecfb350743bd1d09ded5f03c7e5"
+
 CACHE_MAX_AGE_HOURS = 24
 
 # Store display names
@@ -69,8 +77,18 @@ def update_cache():
     
     try:
         with urllib.request.urlopen(CHECKJEBON_URL, timeout=60) as response:
-            data = json.loads(response.read().decode())
-        
+            raw = response.read()
+
+        actual_sha256 = hashlib.sha256(raw).hexdigest()
+        if actual_sha256 != CHECKJEBON_SHA256:
+            print(
+                f"Integrity check failed: expected {CHECKJEBON_SHA256}, got {actual_sha256}",
+                file=sys.stderr,
+            )
+            return None
+
+        data = json.loads(raw.decode())
+
         # Convert to dict keyed by store name
         store_data = {store["n"]: store["d"] for store in data}
         
