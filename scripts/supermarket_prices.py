@@ -14,12 +14,13 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import ssl
 import sys
 import time
 from pathlib import Path
 from datetime import datetime, timedelta
 import urllib.request
-import re
 
 CACHE_DIR = Path.home() / ".openclaw/workspace/data"
 CACHE_FILE = CACHE_DIR / "supermarkets-cache.json"
@@ -66,7 +67,11 @@ def load_cache():
             return None
         
         return cache.get("data")
-    except Exception:
+    except json.JSONDecodeError as e:
+        print(f"Cache file corrupted, will re-download: {e}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"Error loading cache: {e}", file=sys.stderr)
         return None
 
 def update_cache():
@@ -76,7 +81,8 @@ def update_cache():
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     
     try:
-        with urllib.request.urlopen(CHECKJEBON_URL, timeout=60) as response:
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(CHECKJEBON_URL, timeout=60, context=ctx) as response:
             raw = response.read()
 
         actual_sha256 = hashlib.sha256(raw).hexdigest()

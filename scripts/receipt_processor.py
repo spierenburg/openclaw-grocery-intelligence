@@ -9,6 +9,7 @@ import base64
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -18,14 +19,16 @@ from datetime import datetime
 from pathlib import Path
 
 
-# Grocery Intelligence Integration (Finding #11: narrow exception — ImportError only)
+# Grocery Intelligence Integration
+# Catch all exceptions from exec_module — SyntaxError, AttributeError, and other
+# module-level errors must not escape and crash the importer (#6).
 try:
     import importlib.util
     spec = importlib.util.spec_from_file_location("grocery_feedback", Path(__file__).parent / "grocery_feedback.py")
     grocery_feedback = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(grocery_feedback)
     GROCERY_INTELLIGENCE_AVAILABLE = True
-except ImportError as e:
+except Exception as e:
     print(f"⚠️  Grocery intelligence not available: {e}")
     GROCERY_INTELLIGENCE_AVAILABLE = False
 
@@ -55,18 +58,34 @@ def validate_image_path(path_str: str) -> str:
     return str(resolved)
 
 
+def _sanitize_for_display(s: str, max_len: int = 200) -> str:
+    """Strip ANSI/VT control sequences and truncate for safe terminal display."""
+    s = re.sub(r'\x1b\][^\x07]*\x07', '', s)      # OSC sequences
+    s = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', s)   # CSI sequences
+    s = s.replace('\x1b', '')                       # bare ESC
+    return s[:max_len]
+
+
 def find_recent_image(max_age_seconds: int = 300) -> dict | None:
     """Find the most recent image in the inbound folder."""
     now = datetime.now().timestamp()
     candidates = []
-    
+
+    if not INBOUND_DIR.exists():
+        return None
+
     for f in INBOUND_DIR.iterdir():
         if f.suffix.lower() in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
+            # Findings #1/#2: resolve symlinks and verify path stays within INBOUND_DIR
+            try:
+                safe_path = validate_image_path(str(f))
+            except ValueError:
+                continue  # skip symlinks that escape INBOUND_DIR
             mtime = f.stat().st_mtime
             age = now - mtime
             if age <= max_age_seconds:
                 candidates.append({
-                    "path": str(f),
+                    "path": safe_path,
                     "filename": f.name,
                     "age_seconds": int(age),
                     "mtime": mtime
@@ -129,8 +148,7 @@ def _validate_llm_response(parsed: dict) -> dict:
     if "store" in parsed:
         validated["store"] = str(parsed["store"])[:_MAX_STR]
     if "date" in parsed:
-        import re as _re
-        if _re.match(r'^\d{4}-\d{2}-\d{2}$', str(parsed["date"])):
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', str(parsed["date"])):
             validated["date"] = parsed["date"]
     if "time" in parsed:
         validated["time"] = str(parsed["time"])[:10]
@@ -161,8 +179,7 @@ def _validated_int(value: str, min_val: int, max_val: int, default: int) -> int:
 
 def analyze_with_ollama(image_path: str) -> dict:
     """Analyze receipt image using local Ollama vision model."""
-    import re
-    
+
     # Read and encode image
     with open(image_path, "rb") as f:
         img_base64 = base64.b64encode(f.read()).decode("utf-8")
@@ -418,9 +435,13 @@ def cmd_list(args):
     with open(RECEIPTS_JSONL) as f:
         for line in f:
             line = line.strip()
-            if line:
+            if not line:
+                continue
+            try:
                 receipts.append(json.loads(line))
-    
+            except json.JSONDecodeError:
+                continue  # skip malformed lines (#3)
+
     # Most recent first
     receipts.reverse()
     
@@ -440,9 +461,13 @@ def cmd_stats(args):
     with open(RECEIPTS_JSONL) as f:
         for line in f:
             line = line.strip()
-            if line:
+            if not line:
+                continue
+            try:
                 receipts.append(json.loads(line))
-    
+            except json.JSONDecodeError:
+                continue  # skip malformed lines (#3)
+
     total_amount = 0
     by_store = {}
     by_category = {}
@@ -535,7 +560,8 @@ def generate_grocery_intelligence(receipt_data):
                     print(f"🧠 Grocery Intelligence: Found {len(significant)} significant price differences")
                     for d in significant[:2]:
                         direction = "higher" if d['price_difference'] > 0 else "lower"
-                        print(f"   • {d['receipt_product']}: €{abs(d['price_difference']):.2f} {direction} than database")
+                        safe_name = _sanitize_for_display(str(d['receipt_product']))  # #4
+                        print(f"   • {safe_name}: €{abs(d['price_difference']):.2f} {direction} than database")
                 else:
                     print(f"🧠 Grocery Intelligence: {len(discrepancies)} minor price differences logged")
             else:

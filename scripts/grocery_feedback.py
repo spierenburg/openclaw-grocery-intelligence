@@ -15,6 +15,8 @@ import urllib.parse
 
 LOCAL_FEEDBACK_FILE = Path.home() / ".openclaw" / "workspace" / "grocery-feedback.jsonl"
 
+MAX_FEEDBACK_ENTRIES = 1000
+
 _CONTRIBUTOR_ID_FILE = Path.home() / ".openclaw" / "workspace" / "contributor-id.txt"
 
 
@@ -40,7 +42,7 @@ def _sanitize_for_display(s: str, max_len: int = 200) -> str:
 def verify_receipt_against_checkjebon(receipt_data, store_name):
     """Compare receipt prices against checkjebon data."""
     # Load checkjebon data
-    checkjebon_file = Path("data/supermarkets-cache.json")
+    checkjebon_file = Path.home() / ".openclaw" / "workspace" / "data" / "supermarkets-cache.json"
     if not checkjebon_file.exists():
         print("No checkjebon cache found. Run: python3 scripts/supermarket_prices.py update")
         return []
@@ -56,14 +58,14 @@ def verify_receipt_against_checkjebon(receipt_data, store_name):
         best_match = find_best_product_match(receipt_item['name'], store_products)
         
         if best_match:
-            price_diff = abs(receipt_item['price'] - best_match['price'])
-            if price_diff > 0.05:  # >5 cent difference
+            price_diff_signed = receipt_item['price'] - best_match['price']
+            if abs(price_diff_signed) > 0.05:  # >5 cent difference
                 discrepancy = {
                     "receipt_product": receipt_item['name'],
                     "receipt_price": receipt_item['price'],
                     "checkjebon_product": best_match['name'],
                     "checkjebon_price": best_match['price'],
-                    "price_difference": price_diff,
+                    "price_difference": price_diff_signed,
                     "store": store_name,
                     "date": receipt_item.get('date', datetime.now().isoformat()),
                     "confidence": calculate_match_confidence(receipt_item['name'], best_match['name'])
@@ -120,6 +122,11 @@ def submit_feedback_locally(discrepancies):
         "status": "pending_submission"
     }
     
+    # Enforce max entries to prevent unbounded growth
+    if count_pending_feedback() >= MAX_FEEDBACK_ENTRIES:
+        print(f"Max feedback entries ({MAX_FEEDBACK_ENTRIES}) reached; skipping.")
+        return
+
     # Append to JSONL file
     with open(LOCAL_FEEDBACK_FILE, "a") as f:
         f.write(json.dumps(feedback_entry) + "\n")
@@ -150,7 +157,10 @@ def submit_feedback_to_community(batch_size=10, api_url="http://localhost:5000")
     pending_entries = []
     with open(LOCAL_FEEDBACK_FILE) as f:
         for line in f:
-            entry = json.loads(line.strip())
+            try:
+                entry = json.loads(line.strip())
+            except json.JSONDecodeError:
+                continue
             if entry.get("status") == "pending_submission":
                 pending_entries.append(entry)
     
@@ -219,7 +229,10 @@ def mark_entries_submitted(timestamps):
     updated_entries = []
     with open(LOCAL_FEEDBACK_FILE) as f:
         for line in f:
-            entry = json.loads(line.strip())
+            try:
+                entry = json.loads(line.strip())
+            except json.JSONDecodeError:
+                continue
             if entry["timestamp"] in timestamps:
                 entry["status"] = "submitted"
             updated_entries.append(entry)
@@ -236,7 +249,10 @@ def count_pending_feedback():
     count = 0
     with open(LOCAL_FEEDBACK_FILE) as f:
         for line in f:
-            entry = json.loads(line.strip())
+            try:
+                entry = json.loads(line.strip())
+            except json.JSONDecodeError:
+                continue
             if entry.get("status") == "pending_submission":
                 count += 1
     return count
@@ -280,7 +296,8 @@ def analyze_receipt_file(receipt_path, store_name):
     if discrepancies:
         print(f"\n🔍 Found {len(discrepancies)} price discrepancies:")
         for d in discrepancies:
-            print(f"  • {d['receipt_product']}: €{d['receipt_price']:.2f} (receipt) vs €{d['checkjebon_price']:.2f} (checkjebon)")
+            safe_product = _sanitize_for_display(d['receipt_product'])
+            print(f"  • {safe_product}: €{d['receipt_price']:.2f} (receipt) vs €{d['checkjebon_price']:.2f} (checkjebon)")
             print(f"    Difference: €{d['price_difference']:.2f}, Confidence: {d['confidence']:.2f}")
         
         submit_feedback_locally(discrepancies)
