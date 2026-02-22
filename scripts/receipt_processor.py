@@ -101,17 +101,25 @@ def find_recent_image(max_age_seconds: int = 300) -> dict | None:
 
 def run_tesseract(image_path: str) -> str:
     """Run Tesseract OCR on an image."""
+    if any(c in image_path for c in ('\x00', '\n', '\r')):
+        raise ValueError(f"Illegal character in image path: {image_path!r}")
     result = subprocess.run(
         ["/opt/homebrew/bin/tesseract", image_path, "stdout", "-l", "nld+eng"],
         capture_output=True,
         text=True
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"Tesseract failed (exit {result.returncode}): {result.stderr.strip()}")
     return result.stdout.strip()
 
 
 # Ollama config — set OLLAMA_URL in environment to override (never hardcode IPs in source)
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
 VISION_MODEL = os.environ.get("OLLAMA_VISION_MODEL", "llama3.2-vision:11b")
+
+_MODEL_RE = re.compile(r'^[a-zA-Z0-9._:/-]{1,100}$')
+if not _MODEL_RE.match(VISION_MODEL):
+    raise ValueError(f"OLLAMA_VISION_MODEL contains unsafe characters: {VISION_MODEL!r}")
 
 _ALLOWED_OLLAMA_HOSTS = {"localhost", "127.0.0.1"}
 
@@ -259,8 +267,9 @@ If not a receipt: {"is_receipt":false}"""
             except (ValueError, TypeError):
                 return {"is_receipt": False, "error": "Could not parse LLM response into valid receipt schema"}
 
-    except Exception:
-        # Finding #9: don't leak internal IP or error details to caller
+    except Exception as exc:
+        # Don't leak internal IP or error details to caller; log to stderr for diagnostics
+        print(f"[ollama] {type(exc).__name__}: {exc}", file=sys.stderr)
         return {"error": "Analysis service unavailable"}
 
 
@@ -276,10 +285,14 @@ def save_receipt(receipt_data: dict, image_path: str) -> dict:
         Dict with saved file info
     """
     src = Path(image_path)
+    ext = src.suffix.lower()
+    _SAFE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+    if ext not in _SAFE_EXTENSIONS:
+        raise ValueError(f"Unsupported image extension: {ext!r}")
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    new_filename = f"receipt-{timestamp}{src.suffix}"
+    new_filename = f"receipt-{timestamp}{ext}"
     dest_path = RECEIPTS_DIR / new_filename
-    
+
     # Copy image
     shutil.copy2(src, dest_path)
     
@@ -602,7 +615,7 @@ def detect_grocery_only_mode():
         
         return False
         
-    except Exception:
+    except OSError:
         return False
 
 

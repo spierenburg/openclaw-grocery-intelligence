@@ -14,7 +14,7 @@ from datetime import datetime
 class GroceryIntelligenceHub:
     def __init__(self):
         self.workspace = Path.cwd()
-        self.scripts_dir = self.workspace / "scripts"
+        self.scripts_dir = Path(__file__).resolve().parent
         
     def run_script(self, script_name, args=None, capture_output=False):
         """Run a script with arguments."""
@@ -204,7 +204,7 @@ class GroceryIntelligenceHub:
                 print("\n👋 Goodbye!")
                 break
             except Exception as e:
-                print(f"❌ Error: {e}")
+                print(f"❌ Operation failed: {type(e).__name__}", file=sys.stderr)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -279,7 +279,7 @@ def main():
     except KeyboardInterrupt:
         print("\n👋 Operation cancelled")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Operation failed: {type(e).__name__}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
