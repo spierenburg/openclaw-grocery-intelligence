@@ -144,6 +144,7 @@ _VALID_CATEGORIES = {
 }
 _MAX_ITEMS = 200
 _MAX_STR = 500
+MAX_IMAGE_BYTES = 20 * 1024 * 1024  # 20 MB
 
 
 def _validate_llm_response(parsed: dict) -> dict:
@@ -154,12 +155,12 @@ def _validate_llm_response(parsed: dict) -> dict:
         return {"is_receipt": False}
     validated: dict = {"is_receipt": True}
     if "store" in parsed:
-        validated["store"] = str(parsed["store"])[:_MAX_STR]
+        validated["store"] = _sanitize_for_display(str(parsed["store"]), max_len=_MAX_STR)
     if "date" in parsed:
         if re.match(r'^\d{4}-\d{2}-\d{2}$', str(parsed["date"])):
             validated["date"] = parsed["date"]
     if "time" in parsed:
-        validated["time"] = str(parsed["time"])[:10]
+        validated["time"] = _sanitize_for_display(str(parsed["time"]), max_len=10)
     if "amount" in parsed:
         amount = float(parsed["amount"])
         if not (0 <= amount <= 100_000):
@@ -168,7 +169,7 @@ def _validate_llm_response(parsed: dict) -> dict:
     if "items" in parsed:
         if not isinstance(parsed["items"], list):
             raise ValueError("items must be a list")
-        validated["items"] = [str(i)[:_MAX_STR] for i in parsed["items"][:_MAX_ITEMS]]
+        validated["items"] = [_sanitize_for_display(str(i), max_len=_MAX_STR) for i in parsed["items"][:_MAX_ITEMS]]
     if "category" in parsed:
         validated["category"] = parsed["category"] if parsed["category"] in _VALID_CATEGORIES else "overig"
     return validated
@@ -188,7 +189,10 @@ def _validated_int(value: str, min_val: int, max_val: int, default: int) -> int:
 def analyze_with_ollama(image_path: str) -> dict:
     """Analyze receipt image using local Ollama vision model."""
 
-    # Read and encode image
+    # Read and encode image — enforce size cap before reading into memory
+    file_size = os.stat(image_path).st_size
+    if file_size > MAX_IMAGE_BYTES:
+        raise ValueError(f"Image too large: {file_size} bytes (max {MAX_IMAGE_BYTES})")
     with open(image_path, "rb") as f:
         img_base64 = base64.b64encode(f.read()).decode("utf-8")
     
@@ -589,11 +593,15 @@ def detect_grocery_only_mode():
     # Check for recent Signal messages with grocery-only keywords
     try:
         # Look for recent inbound media with grocery-only indicators
-        inbound_dir = Path.home() / ".openclaw" / "media" / "inbound"
-        
+        inbound_dir = (Path.home() / ".openclaw" / "media" / "inbound").resolve()
+
         # Check if there's a recent message file with grocery keywords
         recent_files = []
         for f in inbound_dir.glob("*.json"):
+            try:
+                f.resolve().relative_to(inbound_dir)
+            except ValueError:
+                continue  # skip symlinks escaping inbound_dir
             if (datetime.now().timestamp() - f.stat().st_mtime) < 300:  # 5 minutes
                 recent_files.append(f)
         

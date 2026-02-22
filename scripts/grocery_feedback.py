@@ -4,6 +4,7 @@ Grocery data feedback system - contribute improvements back to the community.
 Compares receipt OCR data against checkjebon prices and reports discrepancies.
 """
 
+import fcntl
 import json
 import re
 import sys
@@ -214,32 +215,32 @@ def submit_feedback_to_community(batch_size=10, api_url="http://localhost:5000")
                 submitted_count += len(batch)
             
         except Exception as e:
-            print(f"❌ Failed to submit batch: {e}")
-            print(f"   (Is community API running at {api_url}?)")
+            print(f"❌ Failed to submit batch: {type(e).__name__}", file=sys.stderr)
             break
     
     print(f"📊 Successfully submitted {submitted_count} feedback entries to community database.")
 
 def mark_entries_submitted(timestamps):
-    """Mark feedback entries as submitted."""
-    # Re-write file with updated status
+    """Mark feedback entries as submitted (exclusive lock prevents concurrent data loss)."""
     if not LOCAL_FEEDBACK_FILE.exists():
         return
-        
-    updated_entries = []
-    with open(LOCAL_FEEDBACK_FILE) as f:
-        for line in f:
+
+    with open(LOCAL_FEEDBACK_FILE, "r+") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        entries = []
+        for line in fh:
             try:
                 entry = json.loads(line.strip())
             except json.JSONDecodeError:
                 continue
-            if entry["timestamp"] in timestamps:
+            if entry.get("timestamp") in timestamps:
                 entry["status"] = "submitted"
-            updated_entries.append(entry)
-    
-    with open(LOCAL_FEEDBACK_FILE, "w") as f:
-        for entry in updated_entries:
-            f.write(json.dumps(entry) + "\n")
+            entries.append(entry)
+        fh.seek(0)
+        fh.truncate()
+        for entry in entries:
+            fh.write(json.dumps(entry) + "\n")
+        # Lock released on close
 
 def count_pending_feedback():
     """Count pending feedback entries."""

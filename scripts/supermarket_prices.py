@@ -70,7 +70,7 @@ def load_cache():
     except json.JSONDecodeError as e:
         print(f"Cache file corrupted, will re-download: {e}", file=sys.stderr)
         return None
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"Error loading cache: {e}", file=sys.stderr)
         return None
 
