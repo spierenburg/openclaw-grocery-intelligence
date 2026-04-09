@@ -1,0 +1,16 @@
+name: Cache Cleanup
+
+on:
+  schedule:
+    - cron: '17 6 * * 0'  # Weekly Sunday 6:17am UTC
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  cache-cleanup:
+    uses: splinterlabs/splinter-patterns/.github/workflows/cache-cleanup.yml@main
+    with:
+      max_age_days: 7
+      runner: self-hosted
